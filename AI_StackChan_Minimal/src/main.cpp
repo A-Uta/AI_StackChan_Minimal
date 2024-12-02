@@ -73,6 +73,10 @@ String message_error = "";    // Add for Global language
 String message_cant_hear = ""; // Add for Global language
 String message_dont_understand = ""; // Add for Global language
 
+// HTMLに質問と答えを表示するために
+String question="";
+String answer="";
+
 /// 接続：Wifiは[スマホアプリ(EspTouch)]、また[APIキーはブラウザ]から設定します。
 
 /// I2C接続のピン番号 // Add for SSD1306
@@ -333,7 +337,7 @@ static const char MODEL_HTML[] PROGMEM = R"KEWL(
   </body>
 </html>)KEWL";
 
-static const char TEXT_CHAT_HTML[] PROGMEM = R"KEWL(
+String TEXT_CHAT_HTML_PRE = R"KEWL(
 <!DOCTYPE html>
 <html>
 <head>
@@ -356,7 +360,9 @@ static const char TEXT_CHAT_HTML[] PROGMEM = R"KEWL(
     <button type="submit">送信する</button>
     <button type="reset">リセットする</button>
     <button type="button" onclick="history.back()">戻る</button>
-	</form>
+	</form>)KEWL";
+
+String TEXT_CHAT_HTML_POST = R"KEWL(
 	<script>
 		function postData(event) {
 			event.preventDefault();
@@ -367,6 +373,9 @@ static const char TEXT_CHAT_HTML[] PROGMEM = R"KEWL(
 				xhr.setRequestHeader("Content-Type", "text/plain;charset=UTF-8");
 				xhr.send(textAreaContent);
         alert("会話を送信しました！");
+        setTimeout(function(){
+          location.reload();
+        }, 10000); // 10000ms = 10sec
 			} else {
         alert("何か会話を入力してください");
 			}
@@ -374,6 +383,8 @@ static const char TEXT_CHAT_HTML[] PROGMEM = R"KEWL(
 	</script>
 </body>
 </html>)KEWL";
+
+String TEXT_CHAT_HTML="";
 
 static const char TOIO_HTML[] PROGMEM = R"KEWL(
 <!DOCTYPE html>
@@ -726,6 +737,7 @@ String chatGpt(String json_string) {
     avatar.setSpeechText("");
     avatar.setExpression(Expression::Neutral);
   }
+  answer = response;
   return response;
 }
 
@@ -1052,6 +1064,7 @@ void start_talking() {
   } else {
       ret = TEXTAREA;
   }
+  question=ret;
   // テキスト入力を初期化
   TEXTAREA = "";
   
@@ -1121,7 +1134,8 @@ void start_talking() {
 
 void handle_text_chat() {
   /// ファイルを読み込み、クライアントに送信する
-  server.send(200, "text/html", TEXT_CHAT_HTML);
+  TEXT_CHAT_HTML=TEXT_CHAT_HTML_PRE+"<br/>Question:"+question+"<br/>Answer:"+answer+TEXT_CHAT_HTML_POST;
+  server.send(200, "text/html", TEXT_CHAT_HTML.c_str());
 }
 void handle_text_chat_set() {
   /// POST以外は拒否
